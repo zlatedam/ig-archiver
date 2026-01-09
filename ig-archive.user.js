@@ -1,27 +1,74 @@
-// Add to the script above, replacing the button code:
+// ==UserScript==
+// @name         Instagram Image Downloader
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Add download button for Instagram posts
+// @match        https://www.instagram.com/*
+// @grant        none
+// ==/UserScript==
 
-img.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
+(function() {
+    'use strict';
     
-    // Create custom context menu
-    const menu = document.createElement('div');
-    menu.innerHTML = `
-        <div style="position:fixed;background:white;border:1px solid #ccc;padding:10px;z-index:10000;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
-            <div style="cursor:pointer;padding:5px;" id="dl-full">Download Full Resolution</div>
-        </div>
-    `;
-    menu.style.left = e.pageX + 'px';
-    menu.style.top = e.pageY + 'px';
+    console.log('Instagram Downloader: Script loaded');
     
-    document.body.appendChild(menu);
+    function addDownloadButton() {
+        // Find all images that don't have a download button yet
+        const images = document.querySelectorAll('img[src*="instagram"]');
+        
+        images.forEach(img => {
+            if (img.dataset.hasDownload) return;
+            img.dataset.hasDownload = 'true';
+            
+            console.log('Found image:', img.src);
+            
+            // Create download button
+            const btn = document.createElement('button');
+            btn.innerHTML = '⬇️ Download';
+            btn.style.cssText = `
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                z-index: 9999;
+                padding: 10px 15px;
+                background: #0095f6;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: bold;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            `;
+            
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const a = document.createElement('a');
+                a.href = img.src;
+                a.download = 'instagram_' + Date.now() + '.jpg';
+                a.click();
+                console.log('Downloaded:', img.src);
+            };
+            
+            // Position relative to parent
+            const parent = img.parentElement;
+            if (parent) {
+                parent.style.position = 'relative';
+                parent.appendChild(btn);
+            }
+        });
+    }
     
-    document.getElementById('dl-full').onclick = () => {
-        const a = document.createElement('a');
-        a.href = highestRes;
-        a.download = 'instagram_' + Date.now() + '.jpg';
-        a.click();
-        menu.remove();
-    };
+    // Run initially
+    setTimeout(addDownloadButton, 2000);
     
-    setTimeout(() => menu.remove(), 5000);
-});
+    // Watch for new content
+    const observer = new MutationObserver(() => {
+        addDownloadButton();
+    });
+    
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true 
+    });
+    
+})();
